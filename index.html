@@ -16,14 +16,20 @@
     initial-value: 270;
   }
   :root {
-    --bg: #0a0a0f;
+    --bg: #07070b;
     --panel: #12121a;
-    --border: #2a2a3a;
-    --text: #e4e4ec;
+    --panel-2: #181826;
+    --border: #262633;
+    --border-soft: #1c1c28;
+    --text: #e8e8f0;
+    --text-dim: #9494ac;
+    --text-faint: #55556a;
     --muted: #8888a0;
     --accent-hue: 270;
-    --accent: hsl(var(--accent-hue) 84% 74%);
-    --accent-dim: hsl(var(--accent-hue) 70% 55% / 0.2);
+    --accent: hsl(var(--accent-hue) 88% 74%);
+    --accent-strong: hsl(var(--accent-hue) 95% 82%);
+    --accent-soft: hsl(var(--accent-hue) 80% 60% / 0.16);
+    --accent-dim: hsl(var(--accent-hue) 70% 55% / 0.22);
     --civics: #60a5fa;
     --sql: #34d399;
     animation: chameleon 22s linear infinite;
@@ -39,141 +45,338 @@
     80%  { --accent-hue: 195; }
     100% { --accent-hue: 630; }
   }
+  :root.turbo { animation-duration: 1.6s; }
   @media (prefers-reduced-motion: reduce) {
     :root { animation: none; }
   }
+
   * { box-sizing: border-box; }
+  html { color-scheme: dark; }
   body {
     margin: 0;
     background: var(--bg);
     color: var(--text);
     font-family: "SF Mono", "Cascadia Code", Consolas, monospace;
-    padding: 32px 16px 64px;
+    padding: 40px 16px 64px;
     line-height: 1.6;
+    position: relative;
+    overflow-x: hidden;
   }
-  .wrap { max-width: 760px; margin: 0 auto; }
-  .kicker { color: var(--muted); font-size: 13px; letter-spacing: 0.04em; }
+  /* Ambient wash + faint engineering grid, so the chameleon hue reads across
+     the whole page instead of only on accent-colored borders. */
+  body::before, body::after {
+    content: ""; position: fixed; z-index: -2; pointer-events: none;
+    width: 60vw; height: 60vw; max-width: 760px; max-height: 760px;
+    border-radius: 50%; filter: blur(90px); opacity: 0.35;
+    background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+  }
+  body::before { top: -18%; left: -12%; }
+  body::after { bottom: -22%; right: -14%; animation-delay: -11s; }
+  .grid-veil {
+    position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background-image:
+      linear-gradient(var(--border-soft) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border-soft) 1px, transparent 1px);
+    background-size: 42px 42px;
+    mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 0%, transparent 75%);
+    opacity: 0.5;
+  }
+
+  .wrap { max-width: 780px; margin: 0 auto; }
+  .kicker {
+    color: var(--text-faint); font-size: 12.5px; letter-spacing: 0.12em;
+    text-transform: uppercase; display: flex; align-items: center; gap: 8px;
+  }
+  .kicker::before {
+    content: ""; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent); box-shadow: 0 0 8px 1px var(--accent);
+  }
   h1 {
-    font-size: clamp(22px, 4vw, 30px);
-    margin: 6px 0 4px;
-    font-weight: 600;
+    font-size: clamp(26px, 5vw, 36px);
+    margin: 10px 0 6px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    display: flex; align-items: baseline; gap: 12px;
   }
-  .sub { color: var(--muted); font-size: 14px; margin-bottom: 22px; }
+  h1 .lizard { cursor: pointer; font-size: 0.7em; filter: drop-shadow(0 0 10px var(--accent)); transition: transform 0.2s ease; user-select: none; }
+  h1 .lizard:hover { transform: scale(1.2) rotate(-8deg); }
+  h1 .x { color: var(--text-faint); font-weight: 400; }
+  .sub { color: var(--text-dim); font-size: 14.5px; margin-bottom: 22px; max-width: 62ch; }
+
   .badge {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 9px;
     border: 1px solid var(--accent-dim);
-    background: linear-gradient(180deg, #1a1023, #12121a);
-    color: var(--accent);
-    padding: 8px 14px;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 12%, var(--panel)), var(--panel));
+    color: var(--accent-strong);
+    padding: 9px 16px;
     border-radius: 999px;
     font-size: 12.5px;
-    box-shadow: 0 0 24px -8px var(--accent);
-    margin-bottom: 20px;
+    box-shadow: 0 0 0 1px var(--accent-dim) inset, 0 0 30px -8px var(--accent), 0 4px 18px -6px rgba(0,0,0,0.6);
+    margin-bottom: 26px;
+    transition: box-shadow 0.3s ease;
   }
+  .badge:hover { box-shadow: 0 0 0 1px var(--accent-dim) inset, 0 0 42px -6px var(--accent), 0 4px 18px -6px rgba(0,0,0,0.6); }
+  .badge .spark { filter: drop-shadow(0 0 4px var(--accent)); }
+
+  /* ---------- architecture diagram ---------- */
+  .arch-wrap {
+    background: linear-gradient(180deg, var(--panel), #0d0d13);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px 18px 12px;
+    margin-bottom: 26px;
+    box-shadow: 0 10px 40px -20px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.02) inset;
+  }
+  .arch-wrap svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .arch-diagram text { font-family: "SF Mono", Consolas, monospace; pointer-events: none; }
+  .arch-diagram .node-title { fill: var(--text); font-size: 11.5px; font-weight: 600; letter-spacing: 0.01em; }
+  .arch-diagram .node-sub { fill: var(--text-faint); font-size: 9px; letter-spacing: 0.01em; }
+  .arch-diagram .node-rect {
+    fill: var(--panel-2); fill-opacity: 0.92; stroke: var(--border); stroke-width: 1.3;
+    filter: url(#node-elevate); transition: stroke 0.25s ease, filter 0.25s ease;
+  }
+  .arch-diagram .node-bubble {
+    fill: var(--panel-2); fill-opacity: 0.92; stroke: var(--accent); stroke-width: 1.4;
+    filter: url(#node-elevate); transition: stroke 0.25s ease;
+  }
+  .arch-diagram .bubble-title { fill: var(--text-dim); font-size: 9.5px; font-weight: 600; }
+  .arch-diagram .node-sink { fill: var(--accent-soft); stroke: var(--accent-strong); stroke-width: 1.5; filter: url(#node-elevate); }
+  .arch-diagram .sink-title { fill: var(--accent-strong); font-size: 11px; font-weight: 700; }
+  .arch-diagram .node-gloss { fill: url(#node-gloss); pointer-events: none; }
+  .arch-diagram .node-icon-bg { fill: var(--bg); stroke: var(--accent); stroke-width: 1.2; }
+  .arch-diagram .node-icon .icon-line { stroke: var(--accent-strong); stroke-width: 1.4; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .arch-diagram .node-icon .icon-fill { fill: var(--accent-strong); stroke: none; }
+  .arch-diagram .edge { fill: none; stroke: var(--border); stroke-width: 1.3; transition: stroke 0.25s ease; }
+  .arch-diagram .flow-dot { fill: var(--accent-strong); filter: drop-shadow(0 0 4px var(--accent)) drop-shadow(0 0 8px var(--accent-soft)); opacity: 0; }
+  .arch-diagram .node-halo { fill: var(--accent-strong); opacity: 0; filter: url(#arch-glow-blur); pointer-events: none; transition: opacity 0.35s ease; }
+  /* Live states — toggled by JS in step with the real fetch, not an ambient
+     loop. Each node only glows while its stage of the actual request is
+     happening; nothing animates until you press "ask". */
+  .arch-diagram .step.is-active .node-rect,
+  .arch-diagram .step.is-active .node-bubble { stroke: var(--accent-strong); filter: url(#node-elevate) drop-shadow(0 0 10px var(--accent)); }
+  .arch-diagram .step.is-active .node-halo { opacity: 0.55; }
+  .arch-diagram .step.is-done .node-rect,
+  .arch-diagram .step.is-done .node-bubble { stroke: var(--border); }
+  .arch-diagram .step.is-active .flow-dot,
+  .arch-diagram .step.is-done .flow-dot { opacity: 1; }
+  .arch-diagram .step.is-active .edge-in { stroke: var(--accent); }
+  .arch-caption { font-family: "SF Mono", Consolas, monospace; font-size: 10.5px; color: var(--text-faint); text-align: center; margin: 6px 0 0; }
+  @media (prefers-reduced-motion: reduce) { .arch-diagram .node-halo { transition: none; } }
+
   .modes { display: flex; gap: 10px; margin-bottom: 18px; }
   .mode-btn {
     flex: 1;
-    background: var(--panel);
+    background: linear-gradient(180deg, var(--panel), #0e0e15);
     border: 1px solid var(--border);
     color: var(--muted);
-    padding: 12px 14px;
-    border-radius: 10px;
+    padding: 13px 16px;
+    border-radius: 12px;
     cursor: pointer;
     font-family: inherit;
     font-size: 14px;
     text-align: left;
-    transition: border-color 0.15s, color 0.15s;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
   }
+  .mode-btn:hover { transform: translateY(-1px); }
   .mode-btn .dot {
     display: inline-block;
     width: 8px; height: 8px;
     border-radius: 50%;
     margin-right: 8px;
   }
-  .mode-btn[data-mode="civics"] .dot { background: var(--civics); }
-  .mode-btn[data-mode="sql"] .dot { background: var(--sql); }
+  .mode-btn[data-mode="civics"] .dot { background: var(--civics); box-shadow: 0 0 6px 1px var(--civics); }
+  .mode-btn[data-mode="sql"] .dot { background: var(--sql); box-shadow: 0 0 6px 1px var(--sql); }
   .mode-btn.active { color: var(--text); }
-  .mode-btn[data-mode="civics"].active { border-color: var(--civics); }
-  .mode-btn[data-mode="sql"].active { border-color: var(--sql); }
-  .mode-btn .desc { display: block; font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+  .mode-btn[data-mode="civics"].active { border-color: var(--civics); box-shadow: 0 0 24px -8px var(--civics); }
+  .mode-btn[data-mode="sql"].active { border-color: var(--sql); box-shadow: 0 0 24px -8px var(--sql); }
+  .mode-btn .desc { display: block; font-size: 11.5px; color: var(--text-faint); margin-top: 3px; }
 
   .panel {
-    background: var(--panel);
+    background: linear-gradient(180deg, var(--panel), #0d0d13);
     border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 18px;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 10px 40px -22px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.02) inset;
   }
   .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
   .chip {
-    background: #1a1a26;
+    background: var(--panel-2);
     border: 1px solid var(--border);
     color: var(--text);
     font-size: 12.5px;
-    padding: 7px 12px;
+    padding: 7px 13px;
     border-radius: 999px;
     cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
   }
-  .chip:hover { border-color: var(--accent); color: var(--accent); }
+  .chip:hover { border-color: var(--accent); color: var(--accent-strong); box-shadow: 0 0 16px -6px var(--accent); }
 
-  .input-row { display: flex; gap: 8px; }
+  .input-row { display: flex; gap: 10px; }
   input[type="text"] {
     flex: 1;
-    background: #0d0d14;
+    background: #0a0a10;
     border: 1px solid var(--border);
     color: var(--text);
-    padding: 12px 14px;
-    border-radius: 8px;
+    padding: 13px 15px;
+    border-radius: 10px;
     font-family: inherit;
     font-size: 14px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
-  input[type="text"]:focus { outline: none; border-color: var(--accent); }
+  input[type="text"]:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
   button.send {
-    background: var(--accent);
-    color: #12121a;
+    background: linear-gradient(180deg, var(--accent-strong), var(--accent));
+    color: #10101a;
     border: none;
-    padding: 0 20px;
-    border-radius: 8px;
+    padding: 0 22px;
+    border-radius: 10px;
     font-family: inherit;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
+    box-shadow: 0 4px 20px -6px var(--accent);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
   }
-  button.send:disabled { opacity: 0.5; cursor: not-allowed; }
+  button.send:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 26px -6px var(--accent); }
+  button.send:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
 
   .answer {
     margin-top: 16px;
-    padding: 14px 16px;
-    border-radius: 10px;
-    background: #0d0d14;
+    padding: 16px 18px;
+    border-radius: 12px;
+    background: #0a0a10;
     border: 1px solid var(--border);
     font-size: 14px;
     white-space: pre-wrap;
     display: none;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
   }
-  .answer.show { display: block; }
-  .answer .meta { color: var(--muted); font-size: 11.5px; margin-top: 10px; }
+  .answer.show { display: block; opacity: 1; transform: translateY(0); }
+  .answer .meta { color: var(--text-faint); font-size: 11.5px; margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--border); }
 
   .footer {
-    margin-top: 22px;
-    color: var(--muted);
+    margin-top: 24px;
+    color: var(--text-faint);
     font-size: 12px;
     display: flex;
     justify-content: space-between;
     flex-wrap: wrap;
     gap: 8px;
   }
-  .status { margin-top: 10px; font-size: 12.5px; color: var(--muted); }
+  .status { margin-top: 10px; font-size: 12.5px; color: var(--text-dim); display: flex; align-items: center; gap: 8px; min-height: 16px; }
   .status.error { color: #f87171; }
+  .status .spinner {
+    width: 11px; height: 11px; border-radius: 50%;
+    border: 2px solid var(--border); border-top-color: var(--accent);
+    animation: spin 0.7s linear infinite; display: none;
+  }
+  .status.loading .spinner { display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
+<div class="grid-veil"></div>
 <div class="wrap">
   <div class="kicker">rag practice lab</div>
-  <h1>civics × sql</h1>
+  <h1><span class="lizard" id="lizard" title="click me">🦎</span>civics<span class="x">×</span>sql</h1>
   <div class="sub">Grounded in real sources — the 128 official USCIS civics questions, and real SQL practice sessions (real dataset, real bugs, real fixes). Not scripted answers.</div>
 
-  <div class="badge">★ RAG-grounded via Vectorize (bge-m3) + Workers AI + Claude Haiku 4.5</div>
+  <div class="badge"><span class="spark">★</span> RAG-grounded via Vectorize (bge-m3) + Workers AI + Claude Haiku 4.5</div>
+
+  <div class="arch-wrap">
+    <svg class="arch-diagram" viewBox="0 0 760 220" role="img" aria-label="Diagram: your question flows through the Worker, Vectorize retrieval filtered by mode, and Claude Haiku 4.5, then renders back on this page.">
+      <defs>
+        <marker id="arch-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="var(--border)"/>
+        </marker>
+        <filter id="arch-glow-blur" x="-60%" y="-60%" width="220%" height="220%">
+          <feGaussianBlur stdDeviation="7"/>
+        </filter>
+        <filter id="node-elevate" x="-40%" y="-40%" width="180%" height="180%">
+          <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#000000" flood-opacity="0.5"/>
+        </filter>
+        <linearGradient id="node-gloss" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.09"/>
+          <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+
+      <path id="e1" class="edge edge-in" data-target="1" d="M70,80 L96,80" marker-end="url(#arch-arrow)"/>
+      <path id="e2" class="edge edge-in" data-target="2" d="M246,80 L270,80" marker-end="url(#arch-arrow)"/>
+      <path id="e3" class="edge edge-in" data-target="3" d="M470,80 L494,80" marker-end="url(#arch-arrow)"/>
+      <path id="e4" class="edge edge-in" data-target="4" d="M644,80 C660,80 660,110 668,120" marker-end="url(#arch-arrow)"/>
+
+      <circle class="flow-dot" id="dot1" r="2.8"><animateMotion dur="0.6s" begin="indefinite" fill="freeze"><mpath href="#e1"/></animateMotion></circle>
+      <circle class="flow-dot" id="dot2" r="2.8"><animateMotion dur="0.6s" begin="indefinite" fill="freeze"><mpath href="#e2"/></animateMotion></circle>
+      <circle class="flow-dot" id="dot3" r="2.8"><animateMotion dur="0.6s" begin="indefinite" fill="freeze"><mpath href="#e3"/></animateMotion></circle>
+      <circle class="flow-dot" id="dot4" r="2.8"><animateMotion dur="0.5s" begin="indefinite" fill="freeze"><mpath href="#e4"/></animateMotion></circle>
+
+      <!-- step 0: you -->
+      <g class="step" id="step0">
+        <circle class="node-bubble" cx="40" cy="80" r="30"/>
+        <text class="bubble-title" x="40" y="76" text-anchor="middle">you</text>
+        <text class="node-sub" x="40" y="88" text-anchor="middle">ask</text>
+      </g>
+
+      <!-- step 1: Worker -->
+      <g class="step" id="step1">
+        <rect class="node-halo" x="92" y="50" width="158" height="60" rx="10"/>
+        <rect class="node-rect" x="96" y="54" width="150" height="52" rx="6"/>
+        <rect class="node-gloss" x="98" y="56" width="146" height="23" rx="5"/>
+        <text class="node-title" x="171" y="76" text-anchor="middle">Worker</text>
+        <text class="node-sub" x="171" y="90" text-anchor="middle">civics-sql-rag</text>
+        <g class="node-icon" transform="translate(96,54)">
+          <circle class="node-icon-bg" r="9"/>
+          <path class="icon-fill" d="M1,-5 L-3,1 L-0.5,1 L-1.5,5 L3,-1 L0.5,-1 Z"/>
+        </g>
+      </g>
+
+      <!-- step 2: Vectorize + Workers AI, with a filter icon for the category gate -->
+      <g class="step" id="step2">
+        <rect class="node-halo" x="266" y="50" width="198" height="60" rx="10"/>
+        <rect class="node-rect" x="270" y="54" width="190" height="52" rx="6"/>
+        <rect class="node-gloss" x="272" y="56" width="186" height="23" rx="5"/>
+        <text class="node-title" x="365" y="76" text-anchor="middle">Vectorize + Workers AI</text>
+        <text class="node-sub" x="365" y="90" text-anchor="middle">bge-m3 · filtered by mode</text>
+        <g class="node-icon" transform="translate(270,54)">
+          <circle class="node-icon-bg" r="9"/>
+          <path class="icon-line" d="M-3.4,-3.6 L3.4,-3.6 L1.6,3.6 L-1.6,3.6 Z"/>
+        </g>
+      </g>
+
+      <!-- step 3: Claude Haiku 4.5 -->
+      <g class="step" id="step3">
+        <rect class="node-halo" x="490" y="50" width="158" height="60" rx="10"/>
+        <rect class="node-rect" x="494" y="54" width="150" height="52" rx="6"/>
+        <rect class="node-gloss" x="496" y="56" width="146" height="23" rx="5"/>
+        <text class="node-title" x="569" y="76" text-anchor="middle">Claude Haiku 4.5</text>
+        <text class="node-sub" x="569" y="90" text-anchor="middle">grounded answer</text>
+        <g class="node-icon" transform="translate(494,54)">
+          <circle class="node-icon-bg" r="9"/>
+          <path class="icon-fill" d="M0,-5 L1,-1 L5,0 L1,1 L0,5 L-1,1 L-5,0 L-1,-1 Z"/>
+        </g>
+      </g>
+
+      <!-- step 4: sink -->
+      <g class="step" id="step4">
+        <rect class="node-halo" x="662" y="99" width="98" height="102" rx="16"/>
+        <rect class="node-sink" x="668" y="105" width="86" height="90" rx="12"/>
+        <rect class="node-gloss" x="670" y="107" width="82" height="40" rx="10"/>
+        <text class="sink-title" x="711" y="145" text-anchor="middle">this</text>
+        <text class="sink-title" x="711" y="159" text-anchor="middle">page</text>
+        <g class="node-icon" transform="translate(668,105)">
+          <circle class="node-icon-bg" r="9"/>
+          <rect class="icon-line" x="-5" y="-4" width="10" height="7" rx="1"/>
+          <line class="icon-line" x1="-5" y1="-1.3" x2="5" y2="-1.3"/>
+          <circle class="icon-fill" cx="-3.3" cy="-2.6" r="0.6"/>
+        </g>
+      </g>
+    </svg>
+    <p class="arch-caption" id="arch-caption">watch this light up in real time when you ask a question below</p>
+  </div>
 
   <div class="modes">
     <button class="mode-btn active" data-mode="civics">
@@ -192,7 +395,7 @@
       <input type="text" id="question" placeholder="Ask something..." maxlength="300" />
       <button class="send" id="send">ask</button>
     </div>
-    <div class="status" id="status"></div>
+    <div class="status" id="status"><span class="spinner"></span><span id="status-text"></span></div>
     <div class="answer" id="answer">
       <div id="answer-text"></div>
       <div class="meta" id="answer-meta"></div>
@@ -228,10 +431,12 @@
   const questionEl = document.getElementById("question");
   const sendEl = document.getElementById("send");
   const statusEl = document.getElementById("status");
+  const statusTextEl = document.getElementById("status-text");
   const answerEl = document.getElementById("answer");
   const answerTextEl = document.getElementById("answer-text");
   const answerMetaEl = document.getElementById("answer-meta");
   const totalEl = document.getElementById("total");
+  const archCaption = document.getElementById("arch-caption");
 
   function renderChips() {
     chipsEl.innerHTML = "";
@@ -254,29 +459,71 @@
     };
   });
 
+  // ---------- diagram: lit up in step with the REAL request, not looped ----------
+  const steps = [0, 1, 2, 3, 4].map((n) => document.getElementById("step" + n));
+  const dots = [1, 2, 3, 4].map((n) => document.getElementById("dot" + n));
+  let stepTimers = [];
+
+  function resetDiagram() {
+    stepTimers.forEach(clearTimeout);
+    stepTimers = [];
+    steps.forEach((s) => s.classList.remove("is-active", "is-done"));
+    dots.forEach((d) => {
+      const anim = d.querySelector("animateMotion");
+      try { anim.endElement(); } catch (e) {}
+    });
+  }
+
+  function activateStep(i, dotIndex) {
+    steps.forEach((s, idx) => { if (idx < i) s.classList.add("is-done"); });
+    steps[i].classList.add("is-active");
+    if (dotIndex !== undefined) {
+      try { dots[dotIndex].querySelector("animateMotion").beginElement(); } catch (e) {}
+    }
+  }
+
+  function playDiagram(promise) {
+    resetDiagram();
+    activateStep(0);
+    stepTimers.push(setTimeout(() => { steps[0].classList.add("is-done"); activateStep(1, 0); archCaption.textContent = "→ hitting the Worker"; }, 120));
+    stepTimers.push(setTimeout(() => { activateStep(2, 1); archCaption.textContent = "→ embedding + Vectorize search, filtered to " + currentMode; }, 420));
+    stepTimers.push(setTimeout(() => { activateStep(3, 2); archCaption.textContent = "→ Claude Haiku 4.5 generating, grounded in retrieved chunks"; }, 820));
+    promise.finally(() => {
+      stepTimers.push(setTimeout(() => { activateStep(4, 3); archCaption.textContent = "→ answer rendered below"; }, 60));
+      stepTimers.push(setTimeout(() => {
+        steps.forEach((s) => s.classList.remove("is-active"));
+        archCaption.textContent = "watch this light up in real time when you ask a question below";
+      }, 1600));
+    });
+  }
+
   async function ask() {
     const question = questionEl.value.trim();
     if (!question) return;
     sendEl.disabled = true;
-    statusEl.textContent = "thinking...";
-    statusEl.className = "status";
+    statusEl.className = "status loading";
+    statusTextEl.textContent = "thinking...";
     answerEl.classList.remove("show");
 
+    const reqPromise = fetch(`${WORKER_URL}/ask`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question, mode: currentMode }),
+    });
+    playDiagram(reqPromise);
+
     try {
-      const res = await fetch(`${WORKER_URL}/ask`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question, mode: currentMode }),
-      });
+      const res = await reqPromise;
       const data = await res.json();
       if (!res.ok) {
-        statusEl.textContent = data.error === "rate_limited"
+        statusTextEl.textContent = data.error === "rate_limited"
           ? "Rate limit reached — try again tomorrow."
           : `Error: ${data.error || "unknown"}`;
         statusEl.className = "status error";
         return;
       }
-      statusEl.textContent = "";
+      statusEl.className = "status";
+      statusTextEl.textContent = "";
       answerTextEl.textContent = data.answer;
       answerMetaEl.textContent = `mode: ${data.mode} · chunks retrieved: ${data.retrieved}`;
       answerEl.classList.add("show");
@@ -284,8 +531,8 @@
         totalEl.textContent = `${data.total} questions answered so far`;
       }
     } catch (e) {
-      statusEl.textContent = "Network error — worker may be unreachable.";
       statusEl.className = "status error";
+      statusTextEl.textContent = "Network error — worker may be unreachable.";
     } finally {
       sendEl.disabled = false;
     }
@@ -293,6 +540,12 @@
 
   sendEl.onclick = ask;
   questionEl.addEventListener("keydown", (e) => { if (e.key === "Enter") ask(); });
+
+  // little easter egg — click the lizard to briefly speed the chameleon up
+  document.getElementById("lizard").addEventListener("click", () => {
+    document.documentElement.classList.add("turbo");
+    setTimeout(() => document.documentElement.classList.remove("turbo"), 2400);
+  });
 
   fetch(`${WORKER_URL}/stats`).then((r) => r.json()).then((d) => {
     if (typeof d.total === "number") totalEl.textContent = `${d.total} questions answered so far`;

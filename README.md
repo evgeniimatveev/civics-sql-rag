@@ -4,6 +4,13 @@ I wanted to stop treating RAG as a memorized diagram ("vector DB + chunks") and 
 
 **[Live Demo →](https://evgeniimatveev.github.io/civics-sql-rag/)**
 
+![Cloudflare Workers](https://img.shields.io/badge/Cloudflare_Workers-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)
+![Vectorize](https://img.shields.io/badge/Vectorize-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)
+![Workers AI](https://img.shields.io/badge/Workers_AI-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)
+![Claude API](https://img.shields.io/badge/Claude_API-D97757?style=for-the-badge&logo=anthropic&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![GitHub Pages](https://img.shields.io/badge/GitHub_Pages-222222?style=for-the-badge&logo=github&logoColor=white)
+
 ---
 
 ## What it does
@@ -16,6 +23,23 @@ Two modes over one Vectorize index, separated by metadata filtering:
 Ask a question in any mode, in any language — it retrieves the most relevant
 chunks by embedding similarity, then Claude Haiku 4.5 answers strictly from
 that retrieved context (not from the model's general knowledge).
+
+## Architecture
+
+```mermaid
+flowchart LR
+    User(["you ask"]) -->|"question + mode"| Worker["Cloudflare Worker<br/>civics-sql-rag"]
+    Worker -->|"embed question"| AI["Workers AI<br/>bge-m3 (multilingual)"]
+    AI --> Vec["Vectorize<br/>139 chunks, filtered by category:<br/>civics | sql"]
+    Vec -->|"top-5 matches"| Worker
+    Worker -->|"question + retrieved context"| Claude["Claude Haiku 4.5"]
+    Claude -->|"grounded answer"| Page["this page"]
+    Worker -.->|"per-IP + global daily caps"| KV["Workers KV"]
+```
+
+One index, two modes — `category` metadata filtering keeps civics and SQL
+retrieval from ever bleeding into each other, instead of standing up two
+separate Vectorize indexes for what is really one corpus with two audiences.
 
 ## Stack
 
