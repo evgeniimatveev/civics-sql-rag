@@ -5,16 +5,42 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>civics × sql — RAG practice</title>
 <style>
+  /* Registered so the browser tweens --accent-hue smoothly frame-by-frame
+     instead of snapping between keyframe stops. Same technique as the
+     personal-site "chameleon", different loop: starts cool at violet
+     instead of warm at amber, and runs the opposite direction — this lab
+     reads as its own thing, not a reskinned homepage. */
+  @property --accent-hue {
+    syntax: '<number>';
+    inherits: true;
+    initial-value: 270;
+  }
   :root {
     --bg: #0a0a0f;
     --panel: #12121a;
     --border: #2a2a3a;
     --text: #e4e4ec;
     --muted: #8888a0;
-    --accent: #c084fc;
-    --accent-dim: #7c3aed33;
+    --accent-hue: 270;
+    --accent: hsl(var(--accent-hue) 84% 74%);
+    --accent-dim: hsl(var(--accent-hue) 70% 55% / 0.2);
     --civics: #60a5fa;
     --sql: #34d399;
+    animation: chameleon 22s linear infinite;
+  }
+  /* Curated 5-stop loop, deliberately steering clear of --civics (~217deg)
+     and --sql (~152deg) so the ambient accent never reads as "the wrong
+     mode is glowing". violet -> magenta -> amber -> lime -> azure -> violet. */
+  @keyframes chameleon {
+    0%   { --accent-hue: 270; }
+    20%  { --accent-hue: 320; }
+    40%  { --accent-hue: 30; }
+    60%  { --accent-hue: 95; }
+    80%  { --accent-hue: 195; }
+    100% { --accent-hue: 630; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :root { animation: none; }
   }
   * { box-sizing: border-box; }
   body {

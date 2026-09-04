@@ -1,10 +1,10 @@
-# civics × sql — RAG practice lab
+# 🦎 civics × sql — RAG practice lab
 
-A small, real RAG (Retrieval-Augmented Generation) system built to practice the
-mechanics hands-on — not a tutorial toy, an actual Cloudflare Worker answering
-real questions against real embedded content.
+I wanted to stop treating RAG as a memorized diagram ("vector DB + chunks") and actually feel where it breaks — so I built a real Cloudflare Worker that answers real questions against real embedded content, grounded in the 128 official USCIS civics questions and my own hands-on SQL practice sessions (bugs included).
 
-**Live demo:** see `index.html` (deploy via GitHub Pages, or open locally against the deployed Worker).
+**[Live Demo →](https://evgeniimatveev.github.io/civics-sql-rag/)**
+
+---
 
 ## What it does
 
@@ -31,12 +31,24 @@ that retrieved context (not from the model's general knowledge).
 ## Why this project exists
 
 Built specifically to turn RAG from a memorized concept ("vector DB + chunks")
-into hands-on intuition: chunking strategy, metadata filtering pitfalls
-(Vectorize silently returns zero matches on an unindexed metadata field —
-`wrangler vectorize create-metadata-index` is required before `filter` works),
-retrieval score tuning (`MIN_SCORE` threshold), and how chunk *boundaries*
-matter more than chunk *size* (each civics chunk = one question; each SQL
-chunk = one complete lesson, never split mid-explanation).
+into hands-on intuition — chunking strategy, retrieval score tuning
+(`MIN_SCORE` threshold), and how chunk *boundaries* matter more than chunk
+*size* (each civics chunk = one question; each SQL chunk = one complete
+lesson, never split mid-explanation).
+
+## Real incident hit while building this
+
+Filtered queries (`filter: { category: "civics" }`) silently returned zero
+matches, even though the unfiltered query worked and the vectors clearly
+existed. Root cause, confirmed by testing directly against the platform via
+`wrangler vectorize query` (bypassing the Worker entirely): **Vectorize's
+metadata index was created *after* the vectors were already upserted, and
+per Cloudflare's own docs, "vectors upserted before a metadata index was
+created won't have their metadata contained in that index."** It's not an
+eventual-consistency delay — it never backfills on its own. Fix: re-run
+`ingest.py` to re-upsert every vector once the metadata index exists. Lesson
+for next time: create `wrangler vectorize create-metadata-index` **before**
+the first ingest, not after.
 
 ## Repo layout
 
@@ -67,13 +79,18 @@ window functions...). To add a new session:
 
 ```
 cd worker
+npx wrangler kv namespace create RATE_LIMIT        # paste the id into wrangler.toml
+npx wrangler vectorize create civics-sql-corpus-m3 --dimensions=1024 --metric=cosine
+npx wrangler vectorize create-metadata-index civics-sql-corpus-m3 --property-name=category --type=string
 npx wrangler deploy
 npx wrangler secret put ADMIN_KEY
 npx wrangler secret put ANTHROPIC_API_KEY
 ```
 
-Vectorize requires an explicit metadata index before `filter` queries work:
+Create the metadata index **before** the first ingest (see incident above) —
+then:
 
 ```
-npx wrangler vectorize create-metadata-index civics-sql-corpus-m3 --property-name=category --type=string
+python rag/build_corpus.py
+ADMIN_KEY=... python rag/ingest.py
 ```
