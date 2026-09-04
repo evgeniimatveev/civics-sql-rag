@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>civics × sql — RAG practice</title>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --panel: #12121a;
+    --border: #2a2a3a;
+    --text: #e4e4ec;
+    --muted: #8888a0;
+    --accent: #c084fc;
+    --accent-dim: #7c3aed33;
+    --civics: #60a5fa;
+    --sql: #34d399;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "SF Mono", "Cascadia Code", Consolas, monospace;
+    padding: 32px 16px 64px;
+    line-height: 1.6;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; }
+  .kicker { color: var(--muted); font-size: 13px; letter-spacing: 0.04em; }
+  h1 {
+    font-size: clamp(22px, 4vw, 30px);
+    margin: 6px 0 4px;
+    font-weight: 600;
+  }
+  .sub { color: var(--muted); font-size: 14px; margin-bottom: 22px; }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--accent-dim);
+    background: linear-gradient(180deg, #1a1023, #12121a);
+    color: var(--accent);
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-size: 12.5px;
+    box-shadow: 0 0 24px -8px var(--accent);
+    margin-bottom: 20px;
+  }
+  .modes { display: flex; gap: 10px; margin-bottom: 18px; }
+  .mode-btn {
+    flex: 1;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 12px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 14px;
+    text-align: left;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .mode-btn .dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-right: 8px;
+  }
+  .mode-btn[data-mode="civics"] .dot { background: var(--civics); }
+  .mode-btn[data-mode="sql"] .dot { background: var(--sql); }
+  .mode-btn.active { color: var(--text); }
+  .mode-btn[data-mode="civics"].active { border-color: var(--civics); }
+  .mode-btn[data-mode="sql"].active { border-color: var(--sql); }
+  .mode-btn .desc { display: block; font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px;
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .chip {
+    background: #1a1a26;
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 12.5px;
+    padding: 7px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
+
+  .input-row { display: flex; gap: 8px; }
+  input[type="text"] {
+    flex: 1;
+    background: #0d0d14;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 14px;
+  }
+  input[type="text"]:focus { outline: none; border-color: var(--accent); }
+  button.send {
+    background: var(--accent);
+    color: #12121a;
+    border: none;
+    padding: 0 20px;
+    border-radius: 8px;
+    font-family: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button.send:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .answer {
+    margin-top: 16px;
+    padding: 14px 16px;
+    border-radius: 10px;
+    background: #0d0d14;
+    border: 1px solid var(--border);
+    font-size: 14px;
+    white-space: pre-wrap;
+    display: none;
+  }
+  .answer.show { display: block; }
+  .answer .meta { color: var(--muted); font-size: 11.5px; margin-top: 10px; }
+
+  .footer {
+    margin-top: 22px;
+    color: var(--muted);
+    font-size: 12px;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .status { margin-top: 10px; font-size: 12.5px; color: var(--muted); }
+  .status.error { color: #f87171; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="kicker">rag practice lab</div>
+  <h1>civics × sql</h1>
+  <div class="sub">Grounded in real sources — the 128 official USCIS civics questions, and real SQL practice sessions (real dataset, real bugs, real fixes). Not scripted answers.</div>
+
+  <div class="badge">★ RAG-grounded via Vectorize (bge-m3) + Workers AI + Claude Haiku 4.5</div>
+
+  <div class="modes">
+    <button class="mode-btn active" data-mode="civics">
+      <span class="dot"></span>Civics (N-400)
+      <span class="desc">128 official USCIS questions</span>
+    </button>
+    <button class="mode-btn" data-mode="sql">
+      <span class="dot"></span>SQL Practice
+      <span class="desc">real sessions, real bugs</span>
+    </button>
+  </div>
+
+  <div class="panel">
+    <div class="chips" id="chips"></div>
+    <div class="input-row">
+      <input type="text" id="question" placeholder="Ask something..." maxlength="300" />
+      <button class="send" id="send">ask</button>
+    </div>
+    <div class="status" id="status"></div>
+    <div class="answer" id="answer">
+      <div id="answer-text"></div>
+      <div class="meta" id="answer-meta"></div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span id="total">— questions answered so far</span>
+    <span>rate-limited to keep this free for everyone</span>
+  </div>
+</div>
+
+<script>
+  const WORKER_URL = "https://evgeniimatveev-civics-sql.evgeniimatveevusa.workers.dev";
+
+  const SAMPLE_QUESTIONS = {
+    civics: [
+      "What is the supreme law of the land?",
+      "How many amendments does the Constitution have?",
+      "Name the three branches of government",
+      "What happened on September 11, 2001?",
+    ],
+    sql: [
+      "What's the difference between WHERE and HAVING?",
+      "How do I avoid a timezone conversion bug?",
+      "What does COALESCE do vs IS NOT NULL?",
+      "How does GROUP BY with multiple columns work?",
+    ],
+  };
+
+  let currentMode = "civics";
+  const chipsEl = document.getElementById("chips");
+  const questionEl = document.getElementById("question");
+  const sendEl = document.getElementById("send");
+  const statusEl = document.getElementById("status");
+  const answerEl = document.getElementById("answer");
+  const answerTextEl = document.getElementById("answer-text");
+  const answerMetaEl = document.getElementById("answer-meta");
+  const totalEl = document.getElementById("total");
+
+  function renderChips() {
+    chipsEl.innerHTML = "";
+    SAMPLE_QUESTIONS[currentMode].forEach((q) => {
+      const chip = document.createElement("div");
+      chip.className = "chip";
+      chip.textContent = q;
+      chip.onclick = () => { questionEl.value = q; ask(); };
+      chipsEl.appendChild(chip);
+    });
+  }
+
+  document.querySelectorAll(".mode-btn").forEach((btn) => {
+    btn.onclick = () => {
+      document.querySelectorAll(".mode-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      currentMode = btn.dataset.mode;
+      renderChips();
+      answerEl.classList.remove("show");
+    };
+  });
+
+  async function ask() {
+    const question = questionEl.value.trim();
+    if (!question) return;
+    sendEl.disabled = true;
+    statusEl.textContent = "thinking...";
+    statusEl.className = "status";
+    answerEl.classList.remove("show");
+
+    try {
+      const res = await fetch(`${WORKER_URL}/ask`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question, mode: currentMode }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        statusEl.textContent = data.error === "rate_limited"
+          ? "Rate limit reached — try again tomorrow."
+          : `Error: ${data.error || "unknown"}`;
+        statusEl.className = "status error";
+        return;
+      }
+      statusEl.textContent = "";
+      answerTextEl.textContent = data.answer;
+      answerMetaEl.textContent = `mode: ${data.mode} · chunks retrieved: ${data.retrieved}`;
+      answerEl.classList.add("show");
+      if (typeof data.total === "number") {
+        totalEl.textContent = `${data.total} questions answered so far`;
+      }
+    } catch (e) {
+      statusEl.textContent = "Network error — worker may be unreachable.";
+      statusEl.className = "status error";
+    } finally {
+      sendEl.disabled = false;
+    }
+  }
+
+  sendEl.onclick = ask;
+  questionEl.addEventListener("keydown", (e) => { if (e.key === "Enter") ask(); });
+
+  fetch(`${WORKER_URL}/stats`).then((r) => r.json()).then((d) => {
+    if (typeof d.total === "number") totalEl.textContent = `${d.total} questions answered so far`;
+  }).catch(() => {});
+
+  renderChips();
+</script>
+</body>
+</html>

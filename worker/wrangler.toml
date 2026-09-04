@@ -1,0 +1,18 @@
+name = "evgeniimatveev-civics-sql"
+main = "worker.js"
+compatibility_date = "2026-08-19"
+
+kv_namespaces = [
+  { binding = "RATE_LIMIT", id = "d88af0838ade4244a665415271705e5a" }
+]
+
+[[vectorize]]
+binding = "VECTORIZE"
+index_name = "civics-sql-corpus-m3"
+
+[ai]
+binding = "AI"
+
+# Secrets (set via `wrangler secret put <NAME>`, not stored here):
+#   ANTHROPIC_API_KEY — Anthropic API key used to generate answers
+#   ADMIN_KEY          — internal token gating the /admin/ingest and /admin/debug-query routes

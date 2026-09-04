@@ -1,0 +1,5 @@
+node_modules/
+.wrangler/
+*.admin_key_local_only.txt
+.env
+.DS_Store
