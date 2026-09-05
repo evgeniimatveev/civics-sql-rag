@@ -159,9 +159,7 @@
   .arch-diagram .step.is-active .node-halo { opacity: 0.55; }
   .arch-diagram .step.is-done .node-rect,
   .arch-diagram .step.is-done .node-bubble { stroke: var(--border); }
-  .arch-diagram .step.is-active .flow-dot,
-  .arch-diagram .step.is-done .flow-dot { opacity: 1; }
-  .arch-diagram .step.is-active .edge-in { stroke: var(--accent); }
+  .arch-diagram .edge-in.is-live { stroke: var(--accent); }
   .arch-caption { font-family: "SF Mono", Consolas, monospace; font-size: 10.5px; color: var(--text-faint); text-align: center; margin: 6px 0 0; }
   @media (prefers-reduced-motion: reduce) { .arch-diagram .node-halo { transition: none; } }
 
@@ -462,13 +460,16 @@
   // ---------- diagram: lit up in step with the REAL request, not looped ----------
   const steps = [0, 1, 2, 3, 4].map((n) => document.getElementById("step" + n));
   const dots = [1, 2, 3, 4].map((n) => document.getElementById("dot" + n));
+  const edges = [1, 2, 3, 4].map((n) => document.getElementById("e" + n));
   let stepTimers = [];
 
   function resetDiagram() {
     stepTimers.forEach(clearTimeout);
     stepTimers = [];
     steps.forEach((s) => s.classList.remove("is-active", "is-done"));
+    edges.forEach((e) => e.classList.remove("is-live"));
     dots.forEach((d) => {
+      d.style.opacity = 0;
       const anim = d.querySelector("animateMotion");
       try { anim.endElement(); } catch (e) {}
     });
@@ -477,8 +478,16 @@
   function activateStep(i, dotIndex) {
     steps.forEach((s, idx) => { if (idx < i) s.classList.add("is-done"); });
     steps[i].classList.add("is-active");
+    // Dots and edges both live outside the .step groups (they connect
+    // nodes rather than belonging to one), so their visibility is driven
+    // directly here rather than through a CSS descendant selector that
+    // can never reach elements that aren't nested inside .step.
     if (dotIndex !== undefined) {
-      try { dots[dotIndex].querySelector("animateMotion").beginElement(); } catch (e) {}
+      edges[dotIndex].classList.add("is-live");
+      const dot = dots[dotIndex];
+      dot.style.opacity = 1;
+      const anim = dot.querySelector("animateMotion");
+      try { anim.beginElement(); } catch (e) {}
     }
   }
 
