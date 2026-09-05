@@ -273,6 +273,43 @@
   }
   .status.loading .spinner { display: inline-block; }
   @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---------- browse-all-questions accordion ---------- */
+  details.qbrowse { margin-bottom: 14px; }
+  details.qbrowse summary {
+    cursor: pointer; list-style: none; user-select: none;
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12.5px; color: var(--text-dim);
+    padding: 9px 4px; border-bottom: 1px dashed var(--border-soft);
+    transition: color 0.15s ease;
+  }
+  details.qbrowse summary::-webkit-details-marker { display: none; }
+  details.qbrowse summary:hover { color: var(--accent-strong); }
+  details.qbrowse summary::before {
+    content: "▸"; display: inline-block; color: var(--accent);
+    transition: transform 0.2s ease; font-size: 10px;
+  }
+  details.qbrowse[open] summary::before { transform: rotate(90deg); }
+  .qlist {
+    max-height: 280px; overflow-y: auto; margin-top: 10px;
+    border: 1px solid var(--border-soft); border-radius: 10px;
+    background: #08080d; padding: 4px 0;
+  }
+  .qlist::-webkit-scrollbar { width: 8px; }
+  .qlist::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  .qlist-cat {
+    position: sticky; top: 0; z-index: 1;
+    background: #0d0d14; color: var(--accent-strong);
+    font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em;
+    padding: 7px 14px; border-bottom: 1px solid var(--border-soft);
+  }
+  .qlist-item {
+    padding: 9px 14px; font-size: 13px; color: var(--text-dim);
+    cursor: pointer; border-bottom: 1px solid var(--border-soft);
+    transition: background 0.12s ease, color 0.12s ease;
+  }
+  .qlist-item:hover { background: var(--accent-soft); color: var(--text); }
+  .qlist-item:last-child { border-bottom: none; }
 </style>
 </head>
 <body>
@@ -389,6 +426,10 @@
 
   <div class="panel">
     <div class="chips" id="chips"></div>
+    <details class="qbrowse" id="qbrowse">
+      <summary id="qbrowse-summary">browse all questions</summary>
+      <div class="qlist" id="qlist"></div>
+    </details>
     <div class="input-row">
       <input type="text" id="question" placeholder="Ask something..." maxlength="300" />
       <button class="send" id="send">ask</button>
@@ -424,6 +465,164 @@
     ],
   };
 
+  // Full corpus, browsable — for when you genuinely don't know what to ask.
+  // Civics: all 128 official questions, grouped exactly like the source
+  // document. SQL: one natural-language prompt per practiced lesson.
+  const CIVICS_ALL = {
+    "American Government": [
+      "What is the form of government of the United States?",
+      "What is the supreme law of the land?",
+      "Name one thing the U.S. Constitution does.",
+      "The U.S. Constitution starts with the words \"We the People.\" What does \"We the People\" mean?",
+      "How are changes made to the U.S. Constitution?",
+      "What does the Bill of Rights protect?",
+      "How many amendments does the U.S. Constitution have?",
+      "Why is the Declaration of Independence important?",
+      "What founding document said the American colonies were free from Britain?",
+      "Name two important ideas from the Declaration of Independence and the U.S. Constitution.",
+      "The words \"Life, Liberty, and the pursuit of Happiness\" are in what founding document?",
+      "What is the economic system of the United States?",
+      "What is the rule of law?",
+      "Many documents influenced the U.S. Constitution. Name one.",
+      "There are three branches of government. Why?",
+      "Name the three branches of government.",
+      "The President of the United States is in charge of which branch of government?",
+      "What part of the federal government writes laws?",
+      "What are the two parts of the U.S. Congress?",
+      "Name one power of the U.S. Congress.",
+      "How many U.S. senators are there?",
+      "How long is a term for a U.S. senator?",
+      "Who is one of your state's U.S. senators now?",
+      "How many voting members are in the House of Representatives?",
+      "How long is a term for a member of the House of Representatives?",
+      "Why do U.S. representatives serve shorter terms than U.S. senators?",
+      "How many senators does each state have?",
+      "Why does each state have two senators?",
+      "Name your U.S. representative.",
+      "What is the name of the Speaker of the House of Representatives now?",
+      "Who does a U.S. senator represent?",
+      "Who elects U.S. senators?",
+      "Who does a member of the House of Representatives represent?",
+      "Who elects members of the House of Representatives?",
+      "Some states have more representatives than other states. Why?",
+      "The President of the United States is elected for how many years?",
+      "The President of the United States can serve only two terms. Why?",
+      "What is the name of the President of the United States now?",
+      "What is the name of the Vice President of the United States now?",
+      "If the president can no longer serve, who becomes president?",
+      "Name one power of the president.",
+      "Who is Commander in Chief of the U.S. military?",
+      "Who signs bills to become laws?",
+      "Who vetoes bills?",
+      "Who appoints federal judges?",
+      "The executive branch has many parts. Name one.",
+      "What does the President's Cabinet do?",
+      "What are two Cabinet-level positions?",
+      "Why is the Electoral College important?",
+      "What is one part of the judicial branch?",
+      "What does the judicial branch do?",
+      "What is the highest court in the United States?",
+      "How many seats are on the Supreme Court?",
+      "How many Supreme Court justices are usually needed to decide a case?",
+      "How long do Supreme Court justices serve?",
+      "Supreme Court justices serve for life. Why?",
+      "Who is the Chief Justice of the United States now?",
+      "Name one power that is only for the federal government.",
+      "Name one power that is only for the states.",
+      "What is the purpose of the 10th Amendment?",
+      "Who is the governor of your state now?",
+      "What is the capital of your state?",
+      "There are four amendments to the U.S. Constitution about who can vote. Describe one of them.",
+      "Who can vote in federal elections, run for federal office, and serve on a jury in the United States?",
+      "What are three rights of everyone living in the United States?",
+      "What do we show loyalty to when we say the Pledge of Allegiance?",
+      "Name two promises that new citizens make in the Oath of Allegiance.",
+      "How can people become United States citizens?",
+      "What are two examples of civic participation in the United States?",
+      "What is one way Americans can serve their country?",
+      "Why is it important to pay federal taxes?",
+      "It is important for all men age 18 through 25 to register for the Selective Service. Name one reason why.",
+    ],
+    "American History": [
+      "The colonists came to America for many reasons. Name one.",
+      "Who lived in America before the Europeans arrived?",
+      "What group of people was taken and sold as slaves?",
+      "What war did the Americans fight to win independence from Britain?",
+      "Name one reason why the Americans declared independence from Britain.",
+      "Who wrote the Declaration of Independence?",
+      "When was the Declaration of Independence adopted?",
+      "The American Revolution had many important events. Name one.",
+      "There were 13 original states. Name five.",
+      "What founding document was written in 1787?",
+      "The Federalist Papers supported the passage of the U.S. Constitution. Name one of the writers.",
+      "Why were the Federalist Papers important?",
+      "Benjamin Franklin is famous for many things. Name one.",
+      "George Washington is famous for many things. Name one.",
+      "Thomas Jefferson is famous for many things. Name one.",
+      "James Madison is famous for many things. Name one.",
+      "Alexander Hamilton is famous for many things. Name one.",
+      "What territory did the United States buy from France in 1803?",
+      "Name one war fought by the United States in the 1800s.",
+      "Name the U.S. war between the North and the South.",
+      "The Civil War had many important events. Name one.",
+      "Abraham Lincoln is famous for many things. Name one.",
+      "What did the Emancipation Proclamation do?",
+      "What U.S. war ended slavery?",
+      "What amendment says all persons born or naturalized in the United States are U.S. citizens?",
+      "When did all men get the right to vote?",
+      "Name one leader of the women's rights movement in the 1800s.",
+      "Name one war fought by the United States in the 1900s.",
+      "Why did the United States enter World War I?",
+      "When did all women get the right to vote?",
+      "What was the Great Depression?",
+      "When did the Great Depression start?",
+      "Who was president during the Great Depression and World War II?",
+      "Why did the United States enter World War II?",
+      "Dwight Eisenhower is famous for many things. Name one.",
+      "Who was the United States' main rival during the Cold War?",
+      "During the Cold War, what was one main concern of the United States?",
+      "Why did the United States enter the Korean War?",
+      "Why did the United States enter the Vietnam War?",
+      "What did the civil rights movement do?",
+      "Martin Luther King, Jr. is famous for many things. Name one.",
+      "Why did the United States enter the Persian Gulf War?",
+      "What major event happened on September 11, 2001 in the United States?",
+      "Name one U.S. military conflict after the September 11, 2001 attacks.",
+      "Name one American Indian tribe in the United States.",
+      "Name one example of an American innovation.",
+    ],
+    "Symbols and Holidays": [
+      "What is the capital of the United States?",
+      "Where is the Statue of Liberty?",
+      "Why does the flag have 13 stripes?",
+      "Why does the flag have 50 stars?",
+      "What is the name of the national anthem?",
+      "The Nation's first motto was \"E Pluribus Unum.\" What does that mean?",
+      "What is Independence Day?",
+      "Name three national U.S. holidays.",
+      "What is Memorial Day?",
+      "What is Veterans Day?",
+    ],
+  };
+
+  const SQL_ALL = {
+    "Session 01 — Basics": [
+      "What's the difference between SELECT * and picking specific columns?",
+      "How does WHERE filter rows, and why is string matching case-sensitive?",
+      "How do ORDER BY and LIMIT work together?",
+      "How should I handle NULL — IS NOT NULL vs COALESCE?",
+      "What are the 5 core aggregate functions I need to know cold?",
+    ],
+    "Session 02 — GROUP BY": [
+      "How does GROUP BY collapse rows into per-group aggregates?",
+      "How do I write clean aliases with multiple aggregates in one query?",
+      "Can I ORDER BY an aggregate alias I just created?",
+      "How do I avoid a timezone double-conversion bug?",
+      "How does HAVING differ from WHERE?",
+      "How does GROUP BY work with multiple columns at once?",
+    ],
+  };
+
   let currentMode = "civics";
   const chipsEl = document.getElementById("chips");
   const questionEl = document.getElementById("question");
@@ -436,6 +635,10 @@
   const totalEl = document.getElementById("total");
   const archCaption = document.getElementById("arch-caption");
 
+  const qlistEl = document.getElementById("qlist");
+  const qbrowseEl = document.getElementById("qbrowse");
+  const qbrowseSummaryEl = document.getElementById("qbrowse-summary");
+
   function renderChips() {
     chipsEl.innerHTML = "";
     SAMPLE_QUESTIONS[currentMode].forEach((q) => {
@@ -447,12 +650,38 @@
     });
   }
 
+  function renderQList() {
+    const source = currentMode === "civics" ? CIVICS_ALL : SQL_ALL;
+    const total = Object.values(source).reduce((sum, arr) => sum + arr.length, 0);
+    qbrowseSummaryEl.textContent = `browse all ${total} questions`;
+    qbrowseEl.open = false;
+    qlistEl.innerHTML = "";
+    Object.entries(source).forEach(([category, questions]) => {
+      const catEl = document.createElement("div");
+      catEl.className = "qlist-cat";
+      catEl.textContent = category;
+      qlistEl.appendChild(catEl);
+      questions.forEach((q) => {
+        const item = document.createElement("div");
+        item.className = "qlist-item";
+        item.textContent = q;
+        item.onclick = () => {
+          questionEl.value = q;
+          qbrowseEl.open = false;
+          ask();
+        };
+        qlistEl.appendChild(item);
+      });
+    });
+  }
+
   document.querySelectorAll(".mode-btn").forEach((btn) => {
     btn.onclick = () => {
       document.querySelectorAll(".mode-btn").forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
       currentMode = btn.dataset.mode;
       renderChips();
+      renderQList();
       answerEl.classList.remove("show");
     };
   });
@@ -561,6 +790,7 @@
   }).catch(() => {});
 
   renderChips();
+  renderQList();
 </script>
 </body>
 </html>
