@@ -30,7 +30,7 @@ that retrieved context (not from the model's general knowledge).
 flowchart LR
     User(["you ask"]) -->|"question + mode"| Worker["Cloudflare Worker<br/>civics-sql-rag"]
     Worker -->|"embed question"| AI["Workers AI<br/>bge-m3 (multilingual)"]
-    AI --> Vec["Vectorize<br/>139 chunks, filtered by category:<br/>civics | sql"]
+    AI --> Vec["Vectorize<br/>146 chunks, filtered by category:<br/>civics | sql"]
     Vec -->|"top-5 matches"| Worker
     Worker -->|"question + retrieved context"| Claude["Claude Haiku 4.5"]
     Claude -->|"grounded answer"| Page["this page"]
